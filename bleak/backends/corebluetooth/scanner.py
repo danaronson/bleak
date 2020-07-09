@@ -71,9 +71,7 @@ class BleakScannerCoreBluetooth(BaseBleakScanner):
             logger.warning("stopScan method could not be called: {0}".format(e))
 
     async def set_scanning_filter(self, **kwargs):
-        raise NotImplementedError(
-            "Need to evaluate which macOS versions to support first..."
-        )
+        self._filters = kwargs.get("filters", {})
 
     async def get_discovered_devices(self) -> List[BLEDevice]:
         found = []
@@ -118,8 +116,6 @@ class BleakScannerCoreBluetooth(BaseBleakScanner):
 
     def register_detection_callback(self, callback: Callable):
         self._callback = callback
-
-    # macOS specific methods
 
     @property
     def is_scanning(self):

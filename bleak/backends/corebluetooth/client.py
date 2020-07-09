@@ -7,6 +7,7 @@ Created on 2019-6-26 by kevincar <kevincarrolldavis@gmail.com>
 import logging
 import uuid
 from asyncio.events import AbstractEventLoop
+from functools import partial
 from typing import Callable, Any, Union
 
 from Foundation import NSData, CBUUID
@@ -51,6 +52,15 @@ class BleakClientCoreBluetooth(BaseBleakClient):
         self._services = None
 
         self._disconnected_callback = None
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Call base class to cleanup (disconnect)
+        await super(BleakClientCoreBluetooth, self).__aexit__(exc_type, exc_val, exc_tb)
+
+        # TODO: Evaluate if this is actually needed.
+        # Remove this from the dictionary of clients
+        manager = self._device_info.manager().delegate()
+        manager.removeclient_(self)
 
     def __str__(self):
         return "BleakClientCoreBluetooth ({})".format(self.address)
@@ -129,6 +139,7 @@ class BleakClientCoreBluetooth(BaseBleakClient):
            A :py:class:`bleak.backends.service.BleakGATTServiceCollection` with this device's services tree.
 
         """
+        # Need to re-discover services when reconnecting
         if self._services is not None:
             return self._services
 
@@ -202,8 +213,14 @@ class BleakClientCoreBluetooth(BaseBleakClient):
         output = await manager.connected_peripheral_delegate.readCharacteristic_(
             characteristic.obj, use_cached=use_cached
         )
-        value = bytearray(output)
+
+        # Sometimes a `pyobjc_unicode`or `__NSCFString` is returned and they can be used as regular Python strings.
+        if isinstance(output, str):
+            value = bytearray(output.encode("utf-8"))
+        else:  # _NSInlineData
+            value = bytearray(output)
         logger.debug("Read Characteristic {0} : {1}".format(characteristic.uuid, value))
+
         return value
 
     async def read_gatt_descriptor(
@@ -228,13 +245,15 @@ class BleakClientCoreBluetooth(BaseBleakClient):
         output = await manager.connected_peripheral_delegate.readDescriptor_(
             descriptor.obj, use_cached=use_cached
         )
+
         if isinstance(
             output, str
         ):  # Sometimes a `pyobjc_unicode`or `__NSCFString` is returned and they can be used as regular Python strings.
             value = bytearray(output.encode("utf-8"))
         else:  # _NSInlineData
-            value = bytearray(output)  # value.getBytes_length_(None, len(value))
+            value = bytearray(output)
         logger.debug("Read Descriptor {0} : {1}".format(handle, value))
+
         return value
 
     async def write_gatt_char(

@@ -19,6 +19,7 @@ from Foundation import (
     CBDescriptor,
     NSData,
     NSError,
+    NSNumber
 )
 from CoreBluetooth import (
     CBCharacteristicWriteWithResponse,
@@ -36,7 +37,7 @@ CBPeripheralDelegate = objc.protocolNamed("CBPeripheralDelegate")
 class _EventDict(dict):
     def get_cleared(self, xUUID) -> asyncio.Event:
         """ Convenience method.
-        Returns a cleared (False) event. Creates it if doesen't exits.
+        Returns a cleared (False) event. Creates it if doesn't exits.
         """
         if xUUID not in self:
             # init as cleared (False)
@@ -212,14 +213,39 @@ class PeripheralDelegate(NSObject):
         return True
 
     # Protocol Functions
+    def peripheral_didDiscoverIncludedServicesForService_error_(
+            self, peripheral: CBPeripheral, service: CBService, error: NSError
+            ) -> None:
+        # TODO: Evaluate if this is necessary or useful
+        pass
+
+    def peripheralIsReadyToSendWriteWithoutResponse_(
+            self, peripheral: CBPeripheral
+            ) -> None:
+        # TODO: Evaluate if this is necessary or useful
+        pass
+
+    def peripheral_didReadRSSI_error_(
+            self, peripheral: CBPeripheral, rssi: NSNumber, error: NSError
+            ) -> None:
+        # TODO: Evaluate if this is necessary or useful
+        pass
+
+    def peripheralDidUpdateName_(
+                self, peripheral: CBPeripheral
+            ) -> None:
+        # TODO: Evaluate if this is necessary or useful
+        pass
+
+    def peripheral_didModifyServices_(
+                self, peripheral: CBPeripheral, services: [CBService]) -> None:
+        # TODO: Evaluate if this is necessary or useful
+        pass
 
     @objc.python_method
     def did_discover_services(self, peripheral: CBPeripheral, error: NSError) -> None:
         if error is not None:
             raise BleakError("Failed to discover services {}".format(error))
-
-        logger.debug("Services discovered")
-        self._services_discovered_event.set()
 
     def peripheral_didDiscoverServices_(
         self, peripheral: CBPeripheral, error: NSError

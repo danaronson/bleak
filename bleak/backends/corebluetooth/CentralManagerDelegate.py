@@ -20,6 +20,7 @@ from CoreBluetooth import (
     CBManagerStateUnauthorized,
     CBManagerStatePoweredOff,
     CBManagerStatePoweredOn,
+    CBCentralManagerScanOptionAllowDuplicatesKey,
 )
 from Foundation import (
     NSObject,
@@ -92,6 +93,11 @@ class CentralManagerDelegate(NSObject):
         )
 
     @property
+    def enabled(self):
+        """Check if the bluetooth device is on and running"""
+        return self.central_manager.state() not in [CBManagerStateUnsupported, CBManagerStateUnauthorized]
+
+    @property
     def isConnected(self) -> bool:
         return self._connection_state == CMDConnectionState.CONNECTED
 
@@ -108,7 +114,23 @@ class CentralManagerDelegate(NSObject):
     async def scanForPeripherals_(self, scan_options) -> List[CBPeripheral]:
         """
         Scan for peripheral devices
-        scan_options = { service_uuids, timeout }
+
+        scan_options dictionary contains one required and one optional value:
+
+        timeout is required
+            If a number, the time in seconds to scan before returning results
+            If None, then continuously scan (scan starts and must be stopped explicitly)
+
+        filters is optional as are individual keys in filters
+                Follows the filtering key/values used in BlueZ
+                (https://github.com/RadiusNetworks/bluez/blob/master/doc/adapter-api.txt)
+            filters :{
+                  "DuplicateData": Are duplicate records allowed (default: True)
+                  "UUIDs": [  Array of String UUIDs for services of interest. Any device that advertised one of them is included]
+                  "RSSI" : only include devices with a greater RSSI.
+                  "Pathloss": int minimum path loss;  Only include devices that include TX power and where
+                                 TX power - RSSI > Pathloss value
+            }
         """
         # remove old
         self.devices = {}
@@ -123,8 +145,21 @@ class CentralManagerDelegate(NSObject):
         if "timeout" in scan_options:
             timeout = float(scan_options["timeout"])
 
+        # Scanning options cover service UUID filtering and removing duplicates
+        # Device discovery will cover RSSI & Pathloss limits
+        # Determine filtering data (used to start scan and validate detected devices)
+        self._filters = scan_options.get("filters", {})
+        allow_duplicates = 1 if self._filters.get("DuplicateData", False) else 0
+
+        service_uuids = []
+        if "UUIDs" in self._filters:
+            service_uuids_str = self._filters["UUIDs"]
+            service_uuids = NSArray.alloc().initWithArray_(
+                list(map(string2uuid, service_uuids_str))
+            )
+
         self.central_manager.scanForPeripheralsWithServices_options_(
-            service_uuids, None
+            service_uuids, NSDictionary.dictionaryWithDictionary_({CBCentralManagerScanOptionAllowDuplicatesKey: allow_duplicates})
         )
 
         if timeout > 0:

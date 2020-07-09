@@ -34,9 +34,10 @@ async def discover(
     except asyncio.TimeoutError:
         raise BleakError("Bluetooth device is turned off")
 
-    scan_options = {"timeout": timeout}
+    scan_options = {"timeout": timeout, "filters": kwargs.get("filters", {})}
 
     await manager.scanForPeripherals_(scan_options)
+
 
     # CoreBluetooth doesn't explicitly use MAC addresses to identify peripheral
     # devices because private devices may obscure their MAC addresses. To cope

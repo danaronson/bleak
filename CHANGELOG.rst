@@ -10,6 +10,11 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 `Unreleased`_
 -------------
 
+Added
+~~~~~
+
+* Keyword arguments ``mtu`` and ``offset`` added for BlueZ backend read and write methods.
+
 Changed
 ~~~~~~~
 

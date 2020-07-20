@@ -431,9 +431,15 @@ class BleakClientBlueZDBus(BaseBleakClient):
                 )
             )
 
-        body = {"offset": kwargs.get("offset", None)}
-        if self._bluez_version[0] == 5 and self._bluez_version[1] >= 51:
-            body["mtu"] = kwargs.get("mtu", None)
+        body = {}
+        if kwargs.get("offset", None):
+            body["offset"] = int(kwargs.get("offset"))
+        if (
+            kwargs.get("mtu", None)
+            and self._bluez_version[0] == 5
+            and self._bluez_version[1] >= 51
+        ):
+            body["mtu"] = int(kwargs.get("mtu"))
 
         value = bytearray(
             await self._bus.callRemote(
@@ -550,9 +556,16 @@ class BleakClientBlueZDBus(BaseBleakClient):
         if response or (self._bluez_version[0] == 5 and self._bluez_version[1] > 50):
             # TODO: Add OnValueUpdated handler for response=True?
 
-            body = {"offset": kwargs.get("offset", None)}
-            if self._bluez_version[0] == 5 and self._bluez_version[1] >= 51:
-                body["mtu"] = kwargs.get("mtu", None)
+            body = {}
+            if kwargs.get("offset", None):
+                body["offset"] = int(kwargs.get("offset"))
+            if (
+                kwargs.get("mtu", None)
+                and self._bluez_version[0] == 5
+                and self._bluez_version[1] >= 51
+            ):
+                body["mtu"] = int(kwargs.get("mtu"))
+
             await self._bus.callRemote(
                 characteristic.path,
                 "WriteValue",
@@ -689,7 +702,8 @@ class BleakClientBlueZDBus(BaseBleakClient):
         self._subscriptions.append(characteristic.handle)
 
     async def stop_notify(
-        self, char_specifier: Union[BleakGATTCharacteristicBlueZDBus, int, str, uuid.UUID]
+        self,
+        char_specifier: Union[BleakGATTCharacteristicBlueZDBus, int, str, uuid.UUID],
     ) -> None:
         """Deactivate notification/indication on a specified characteristic.
 
@@ -722,7 +736,8 @@ class BleakClientBlueZDBus(BaseBleakClient):
     # DBUS introspection method for characteristics.
 
     async def get_all_for_characteristic(
-        self, char_specifier: Union[BleakGATTCharacteristicBlueZDBus, int, str, uuid.UUID]
+        self,
+        char_specifier: Union[BleakGATTCharacteristicBlueZDBus, int, str, uuid.UUID],
     ) -> dict:
         """Get all properties for a characteristic.
 
